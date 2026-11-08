@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SignalStack | Funnel observatory</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#261c15;background:#f7f7f2}*{box-sizing:border-box}body{margin:0}main{width:min(1080px,calc(100% - 32px));margin:auto;padding:38px 0 80px}.brand{font-weight:800;font-size:12px;letter-spacing:.09em;color:#2374ab;text-transform:uppercase}h1{font-size:clamp(32px,5.6vw,58px);line-height:1.09;letter-spacing:-.05em;margin:12px 0}.muted{color:#61564a;line-height:1.6;max-width:710px}.notice{font-size:13px;color:#6d522b;background:#fff1d7;padding:13px;border-radius:8px}.buttons{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:24px 0}button,.file{display:inline-flex;gap:6px;align-items:center;justify-content:center;border-radius:9px;border:1px solid #2374ab;background:#2374ab;color:white;padding:11px 17px;font-weight:750;font-size:14px;cursor:pointer}.file{color:#2374ab;background:transparent}.file input{display:none}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:25px 0}.card,.panel{background:#fff;border:1px solid #e0ddd3;border-radius:13px;padding:20px}.big{font-size:clamp(27px,4vw,40px);font-weight:850;letter-spacing:-.04em;color:#2374ab;margin:12px 0 3px}.cap{font-size:12px;letter-spacing:.03em;color:#62574b;font-weight:650}.panel{margin-bottom:13px}.section{font-size:17px;margin:0 0 15px}.row{display:grid;grid-template-columns:160px 1fr 75px;gap:15px;align-items:center;margin:13px 0;font-size:13px}.bar{background:#ebe8df;border-radius:999px;height:12px;overflow:hidden}.fill{background:#2374ab;height:100%;border-radius:999px}.percent{text-align:right;font-weight:800}.money{display:flex;gap:12px;flex-wrap:wrap}.money div{padding:10px 18px;background:#f7f7f2;border-radius:10px;font-size:13px}.money strong{display:block;font-size:22px;margin-top:4px}li{margin:8px 0}footer{font-size:12px;color:#72685d;margin:25px 0}#error{color:#a22;font-weight:750}a{color:#2374ab}@media(max-width:600px){.row{grid-template-columns:115px 1fr 58px;gap:9px}}
+</style>
+</head>
+<body><main>
+<div class="brand">SIGNALSTACK / WORKING ALPHA</div>
+<h1>Know which part of your funnel needs attention.</h1>
+<p class="muted">The first working slice of a bigger, creator-owned growth intelligence platform. Count unique visitors and orders, catch duplicate purchase events, and get a testable next-step hypothesis.</p>
+<div class="notice">Synthetic demo only. This tool does not connect to your ad account, checkout, or real customer database. It does not calculate business profit.</div>
+<div class="buttons"><button id="demo">Load synthetic demo</button><label class="file">Import event JSON <input type="file" accept=".json,application/json" id="upload"></label></div><p id="error" role="alert"></p>
+<div id="results" hidden>
+<div class="grid" id="kpis"></div>
+<section class="panel"><h2 class="section">Funnel stages</h2><div id="stages"></div></section>
+<section class="panel"><h2 class="section">Unit economics (INR)</h2><div id="economics" class="money"></div></section>
+<section class="panel"><h2 class="section">What to investigate next</h2><p id="experiment"></p><h3 class="cap">Tracking and interpretation warnings</h3><ul id="warnings"></ul></section>
+</div>
+<footer>Everything runs in this browser. No cookies, analytics SDKs, API calls, or external uploads. <a href="README.md">Docs and roadmap</a>.</footer>
+</main><script src="src/engine.js"></script><script>
+'use strict';
+const demo={period:{start:'2026-11-01T00:00:00+05:30',end:'2026-11-08T00:00:00+05:30'},adSpendINR:1200,events:[]};
+for(let i=1;i<=10;i++){const p='anon-'+i;const t='2026-11-02T09:00:00+05:30';demo.events.push({eventId:'lp'+i,personId:p,type:'landing_view',at:t,source:'browser',channel:i<=6?'instagram':'organic'});if(i<=6)demo.events.push({eventId:'op'+i,personId:p,type:'opt_in',at:t,source:'browser'});if(i<=4)demo.events.push({eventId:'ck'+i,personId:p,type:'checkout_view',at:t,source:'browser'});if(i<=3)demo.events.push({eventId:'pu'+i,personId:p,type:'purchase',orderId:'order-'+i,valueINR:499,at:t,source:'server'});}
+demo.events.push({...demo.events.find(e=>e.eventId==='pu1'),source:'browser'});
+function node(tag,text,cls){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el}
+function pretty(v,suffix=''){return v===null?'N/A':(typeof v==='number'?v.toLocaleString('en-IN'):v)+suffix}
+function draw(input){const r=SignalStack.analyze(input),k=document.querySelector('#kpis');k.replaceChildren();for(const [title,value] of [['Unique LP visitors',r.counts.landingVisitors],['Opt-ins',r.counts.leads],['Checkout visitors',r.counts.checkoutVisitors],['Paid orders',r.counts.orders],['Overall LPCR',pretty(r.metrics.landingToOrderLPCR,'%')]]){const box=node('div',undefined,'card');box.append(node('div',title,'cap'),node('div',pretty(value),'big'));k.append(box)}
+const stage=document.querySelector('#stages');stage.replaceChildren();for(const [title,amount] of [['Landing',r.counts.landingVisitors],['Opt-in',r.counts.leads],['Checkout',r.counts.checkoutVisitors],['Orders',r.counts.orders]]){const row=node('div',undefined,'row');const track=node('div',undefined,'bar');const fill=node('div',undefined,'fill');fill.style.width=(r.counts.landingVisitors?Math.min(100,amount/r.counts.landingVisitors*100):0)+'%';track.append(fill);row.append(node('span',title),track,node('span',String(amount),'percent'));stage.append(row)}
+const ec=document.querySelector('#economics');ec.replaceChildren();for(const [label,value] of [['Revenue',r.metrics.revenueINR],['Ad spend',r.metrics.adSpendINR],['Cost / order',r.metrics.costPerOrderINR],['Revenue minus ads (not profit)',r.metrics.revenueMinusAdSpendINR]]){const e=node('div',label);e.append(node('strong',value===null?'N/A':'₹'+pretty(value)));ec.append(e)}
+document.querySelector('#experiment').textContent=r.experiment.hypothesis+' '+r.experiment.caution;
+const warnings=document.querySelector('#warnings');warnings.replaceChildren(...[...r.warnings,...r.limitations].map(s=>node('li',s)));document.querySelector('#results').hidden=false;document.querySelector('#error').textContent='';}
+document.querySelector('#demo').addEventListener('click',()=>draw(demo));document.querySelector('#upload').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{draw(JSON.parse(await file.text()))}catch(err){document.querySelector('#error').textContent=err.message;}});draw(demo);
+</script></body></html>
